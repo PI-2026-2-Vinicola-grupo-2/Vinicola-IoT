@@ -1,34 +1,134 @@
-# Vinícola IoT
+# Vinícola — IoT
 
-Sistema IoT desenvolvido para o **Projeto Integrador — Inteligência de Dados no Vale do São Francisco**.
+Sistema de Internet das Coisas (IoT) desenvolvido para o **Projeto Integrador — Inteligência de Dados no Vale do São Francisco**.
 
-O projeto utiliza um **ESP32 e sensores** para coletar dados climáticos, como temperatura e umidade, e enviar essas informações para o **ThingSpeak** por meio de Wi-Fi e MQTT.
+O projeto utiliza um **ESP32** conectado a um sensor **DHT11** para coletar dados de temperatura e umidade. As leituras são enviadas por Wi-Fi utilizando o protocolo MQTT para o **ThingSpeak**.
 
----
+## Arquitetura
 
-## 1. Instalação do Arduino IDE
+```text
+DHT11
+  │
+  │ Temperatura / Umidade
+  ▼
+ESP32
+  │
+  │ Wi-Fi
+  │
+  │ MQTT
+  ▼
+ThingSpeak
+  │
+  │ API REST
+  ▼
+Backend FastAPI
+  │
+  ▼
+Supabase PostgreSQL
+  │
+  ▼
+Dashboard Web
+```
 
-Baixe e instale o Arduino IDE pelo site oficial:
+## Hardware
 
-[https://www.arduino.cc/en/software/](https://www.arduino.cc/en/software/)
+| Componente | Função |
+|---|---|
+| ESP32 | Processamento e comunicação Wi-Fi |
+| DHT11 | Medição de temperatura e umidade |
+| Cabo USB | Alimentação e gravação do firmware |
 
-Após instalar, abra o **Arduino IDE**.
+### Pino utilizado
 
----
+O sensor DHT11 está configurado no código para utilizar o pino:
 
-## 2. Configuração do ESP32
+```text
+GPIO 4
+```
 
-No Arduino IDE, abra:
+Tipo do sensor:
+
+```text
+DHT11
+```
+
+## Tecnologias
+
+- ESP32
+- Arduino IDE
+- C/C++ para Arduino
+- DHT Sensor Library
+- Adafruit Unified Sensor
+- PubSubClient
+- Wi-Fi
+- MQTT
+- ThingSpeak
+
+## ThingSpeak
+
+O dispositivo publica as leituras no canal utilizado pelo projeto:
+
+```text
+Channel ID: 3500405
+```
+
+Canal:
+
+**PI - ThingSpeak IoT**
+
+https://thingspeak.mathworks.com/channels/3500405/
+
+Os campos utilizados são:
+
+| Campo | Dado |
+|---|---|
+| `field1` | Temperatura |
+| `field2` | Umidade |
+
+O payload publicado possui o formato:
+
+```text
+field1=24.50&field2=60.00
+```
+
+## Comunicação MQTT
+
+O ESP32 utiliza o broker MQTT do ThingSpeak:
+
+```text
+Broker: mqtt3.thingspeak.com
+Porta: 1883
+```
+
+O tópico utilizado para publicação é construído a partir do ID do canal:
+
+```text
+channels/<CHANNEL_ID>/publish
+```
+
+As credenciais MQTT são mantidas no arquivo local `arduino_secrets.h`.
+
+> O arquivo `arduino_secrets.h` não deve ser enviado para o GitHub. Utilize somente o arquivo `arduino_secrets.h.example` no repositório.
+
+## Instalação do Arduino IDE
+
+Baixe o Arduino IDE pelo site oficial:
+
+https://www.arduino.cc/en/software/
+
+Após a instalação, abra o Arduino IDE.
+
+## Configuração da placa ESP32
+
+No Arduino IDE, acesse:
 
 **Arquivo → Preferências**
 
-No campo **URLs adicionais para gerenciadores de placas**, adicione:
+Em **URLs adicionais para gerenciadores de placas**, adicione:
 
 ```text
 https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 ```
-
-Clique em **OK**.
 
 Depois acesse:
 
@@ -40,139 +140,160 @@ Pesquise por:
 ESP32
 ```
 
-Instale:
+Instale o pacote:
 
 ```text
 esp32 by Espressif Systems
 ```
 
-Após a instalação, selecione a placa ESP32 utilizada no projeto em:
+Selecione posteriormente a placa ESP32 utilizada no projeto.
 
-**Ferramentas → Placa → esp32**
-
----
-
-## 3. Instalação das bibliotecas
+## Bibliotecas
 
 No Arduino IDE, acesse:
 
 **Ferramentas → Gerenciar Bibliotecas**
 
-Pesquise e instale as seguintes bibliotecas:
+Instale:
 
 ### DHT sensor library
 
-Procure por:
+Biblioteca da Adafruit:
 
 ```text
 DHT sensor library
 ```
 
-Instale a biblioteca da **Adafruit**.
-
 ### Adafruit Unified Sensor
-
-Procure por:
 
 ```text
 Adafruit Unified Sensor
 ```
 
-Instale a biblioteca da **Adafruit**.
-
 ### PubSubClient
-
-Procure por:
 
 ```text
 PubSubClient
 ```
 
-Essa biblioteca será utilizada para a comunicação **MQTT**.
+A biblioteca `WiFi.h` já é disponibilizada pelo pacote ESP32 instalado no Arduino IDE.
 
-> A biblioteca `WiFi.h` já está disponível através do pacote de placas ESP32 instalado anteriormente.
+## Configuração das credenciais
 
----
-
-## 4. Configuração das credenciais
-
-O projeto possui o arquivo:
+O projeto contém:
 
 ```text
 arduino_secrets.h.example
 ```
 
-Esse arquivo serve como modelo para configurar as informações necessárias para conexão.
-
-Faça uma cópia dele e renomeie a cópia para:
+Crie uma cópia chamada:
 
 ```text
 arduino_secrets.h
 ```
 
-Depois, abra o arquivo e preencha as informações solicitadas, como:
+Preencha os dados necessários para conexão:
 
-* Nome da rede Wi-Fi;
-* Senha do Wi-Fi;
-* Credenciais necessárias para comunicação com o ThingSpeak.
+- SSID da rede Wi-Fi;
+- senha do Wi-Fi;
+- ID do canal ThingSpeak;
+- Client ID MQTT;
+- usuário MQTT;
+- senha MQTT.
 
-**Importante:** não envie o arquivo `arduino_secrets.h` para o GitHub, pois ele pode conter informações privadas.
+Exemplo conceitual:
 
-Utilize apenas o arquivo:
-
-```text
-arduino_secrets.h.example
+```cpp
+#define SECRET_SSID "SUA_REDE"
+#define SECRET_PASS "SUA_SENHA"
+#define SECRET_MQTT_CLIENT_ID "SEU_CLIENT_ID"
+#define SECRET_MQTT_USERNAME "SEU_USUARIO"
+#define SECRET_MQTT_PASSWORD "SUA_SENHA"
+#define SECRET_CHANNEL_ID 3500405
 ```
 
-no repositório.
+> Nunca publique credenciais reais no código ou no GitHub.
 
----
+## Upload para o ESP32
 
-## 5. ThingSpeak
+1. Conecte o ESP32 ao computador por USB.
+2. Abra `Vinicola-IoT.ino`.
+3. Selecione a placa ESP32 correta.
+4. Selecione a porta correspondente ao dispositivo.
+5. Clique em **Verificar** para compilar.
+6. Clique em **Upload** para gravar o firmware.
+7. Abra o Monitor Serial em `115200 baud` para acompanhar a conexão.
 
-Os dados coletados pelo ESP32 são enviados para o canal do projeto no **ThingSpeak**.
+## Funcionamento do firmware
 
-### Canal do projeto
+O fluxo executado pelo ESP32 é:
 
-**[PI - ThingSpeak IoT](https://thingspeak.mathworks.com/channels/3500405/)**
+1. Inicialização do sensor DHT11.
+2. Conexão à rede Wi-Fi.
+3. Configuração do servidor MQTT.
+4. Conexão ao broker do ThingSpeak.
+5. Leitura da temperatura.
+6. Leitura da umidade.
+7. Validação básica das leituras.
+8. Montagem do payload MQTT.
+9. Publicação no canal ThingSpeak.
+10. Repetição do processo.
 
-Nesse canal é possível acompanhar os dados enviados pelo dispositivo IoT.
+O intervalo entre as publicações é de aproximadamente **16 segundos**, respeitando o intervalo mínimo necessário para utilização do plano gratuito do ThingSpeak.
 
----
+## Reconexão automática
 
-## 6. Enviando o código para o ESP32
+O firmware verifica continuamente o estado da conexão.
 
-1. Conecte o ESP32 ao computador utilizando um cabo USB.
-2. Abra o arquivo:
+Caso o Wi-Fi seja desconectado, o ESP32 tenta estabelecer a conexão novamente.
 
-```text
-Vinicola-IoT.ino
-```
-
-3. No Arduino IDE, selecione a placa ESP32 utilizada no projeto.
-4. Acesse **Ferramentas → Porta** e selecione a porta correspondente ao ESP32.
-5. Clique em **Verificar** para compilar o código.
-6. Clique em **Upload** para enviar o código para o ESP32.
-
-Após o envio, o ESP32 iniciará o programa e realizará a coleta e o envio dos dados.
-
----
+Caso a sessão MQTT seja perdida, o dispositivo tenta se reconectar ao broker.
 
 ## Estrutura do projeto
 
 ```text
 Vinicola-IoT/
-│
 ├── README.md
 ├── Vinicola-IoT.ino
 └── arduino_secrets.h.example
 ```
 
----
+## Segurança
 
-## Projeto Integrador
+As credenciais utilizadas pelo dispositivo devem permanecer fora do código versionado.
 
-**Inteligência de Dados no Vale do São Francisco**
+O arquivo abaixo é apenas um modelo:
 
-Este repositório corresponde à parte de **IoT e coleta de dados** do projeto, utilizando ESP32 e sensores para obtenção de informações climáticas.
+```text
+arduino_secrets.h.example
+```
 
+O arquivo real deve permanecer local:
+
+```text
+arduino_secrets.h
+```
+
+Além disso, recomenda-se utilizar credenciais específicas para o dispositivo e realizar a rotação dessas credenciais quando necessário.
+
+## Status atual
+
+- [x] ESP32 configurado
+- [x] Sensor DHT11
+- [x] Leitura de temperatura
+- [x] Leitura de umidade
+- [x] Conexão Wi-Fi
+- [x] Comunicação MQTT
+- [x] Publicação no ThingSpeak
+- [x] Reconexão automática de Wi-Fi
+- [x] Reconexão automática de MQTT
+- [x] Separação das credenciais em arquivo de secrets
+- [ ] Comunicação MQTT com TLS
+- [ ] Validação criptográfica da origem das mensagens
+- [ ] Persistência local de leituras em caso de perda temporária da conexão
+
+## Repositórios relacionados
+
+- **Backend:** Vinicola-Back — API FastAPI hospedada no Render.
+- **Frontend:** Vinicola-Front — dashboard web.
+- **Banco:** Supabase PostgreSQL — banco utilizado pelo backend em produção.
